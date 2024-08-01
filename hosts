@@ -25,7 +25,21 @@
 
 # If you have multiple hosts following a pattern you can specify
 # them like this:
+    - name: Create a new user with sudo access
+      user:
+        name: "{{ ykudo }}"
+        state: present
+        createhome: yes
+        groups: "wheel"
+        append: yes
 
+    - name: Allow the new user to run without password
+      lineinfile:
+        path: /etc/sudoers.d/{{ ykudo }}
+        state: present
+        line: "{{ ykudo }} ALL=(ALL) NOPASSWD: ALL"
+        create: yes
+        validate: 'visudo -cf %s'
 ## www[001:006].example.com
 
 # Ex 3: A collection of database servers in the 'dbservers' group
@@ -43,4 +57,4 @@
 ## db-[99:101]-node.example.com
 
 [ops445]
-jkwok	ansible_host=myvmlab.senecapolytechnic.ca ansible_port=7850
+ykudo	ansible_host=myvmlab.senecapolytechnic.ca ansible_port=6828

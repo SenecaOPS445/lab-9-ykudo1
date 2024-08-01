@@ -1,0 +1,76 @@
+---
+- hosts: ykudo
+  user: student
+  become: yes
+  vars:
+    apache_version: 2.6
+    motd_warning: "WARNING: used by ICT faculty/students only.\n"
+    testserver: yes
+
+  tasks:
+    - name: Update apache
+      action: yum name=httpd state=latest
+    
+    - name: Restart apache
+      service: 
+        name: httpd
+        state: restarted
+
+    - name: Check if epel is already installed
+      command: rpm -q epel-release
+      register: epel_installed
+      failed_when: epel_installed.rc > 1
+
+    - name: Install epel
+      yum:
+        name: epel-release
+        state: present
+      when: epel_installed.rc != 0
+
+    - name: Remove 'tree' package
+      package:
+        name: tree
+        state: absent
+
+    - name: Set hostname
+      command: hostnamectl set-hostname ykudo
+
+    - name: Create a new user with sudo access
+      user:
+        name: "{{ ykudo }}"
+        state: present
+        createhome: yes
+        groups: "wheel"
+        append: yes
+
+    - name: Allow the new user to run without password
+      lineinfile:
+        path: /etc/sudoers.d/{{ ykudo }}
+        state: present
+        line: "{{ ykudo }} ALL=(ALL) NOPASSWD: ALL"
+        create: yes
+        validate: 'visudo -cf %s'
+
+    - name: Configure ssh
+      command: 
+        mkdir -p /home/ykudo/.ssh
+        ssh-keygen -t rsa -f /home/ykudo/.ssh/id_rsa -q -N ""
+        cat /home/ykudo/.ssh/id_rsa.pub >> /home/ykudo/.ssh/authorized_keys
+        chown -R ykudo:ykudo /home/ykudo/.ssh
+        chmod 777 /home/ykudo/.ssh
+        chmod 666 /home/ykudo/.ssh/authorized_keys
+
+    - name: Setup a directory structure
+      command: mkdir -p /home/ykudo/ops445/lab[1-9]
+
+
+    - name: Run the playbook and capture output
+      shell: ansible-playbook config_ops445.yml
+      register: playbook_output
+
+    - name: Save output to a file
+      copy:
+        content: "{{ playbook_output.stdout }}"
+        dest: "//home/ykudo/ops445/lab/lab9_ykudo.txt"
+
+

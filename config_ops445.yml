@@ -63,8 +63,19 @@
 
 
     - name: Setup a directory structure
-      command: mkdir -p /home/ykudo/ops445/lab[1-9]
-
+      file:
+        path: "/home/ykudo/ops445/lab{{ item }}"
+        state: directory
+      loop:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
 
 
 
